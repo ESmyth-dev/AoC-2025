@@ -19,10 +19,11 @@ struct Coordinate
         return std::sqrt(std::pow(c2.x - c1.x, 2) + std::pow(c2.y - c1.y, 2) + std::pow(c2.z - c1.z, 2));
     }
 
-    bool operator<(const Coordinate& other) const
-    {
-        return x < other.x;
-    }
+    bool operator<(const Coordinate& other) const {
+    if (x != other.x) return x < other.x;
+    if (y != other.y) return y < other.y;
+    return z < other.z;
+}
 };
 
 struct Connection
@@ -49,6 +50,7 @@ int main()
     std::string line{};
     std::vector<Coordinate> coords{};
     std::vector<Connection> connections{};
+    double product{1};
 
     while (std::getline(inf, line))
     {
@@ -80,7 +82,8 @@ int main()
     std::vector<std::set<Coordinate>> circuits;
 
     bool inserted{false};
-    for (std::size_t i {0}; i < 1000; ++i)
+    bool finished{false};
+    for (std::size_t i {0}; i < connections.size(); ++i)
     {
         inserted = false;
         if (circuits.empty())
@@ -105,6 +108,11 @@ int main()
                 }
                 circuits[j].insert(connections[i].coord2);
                 first_match = static_cast<int>(j);
+                if (circuits[0].size() == coords.size())
+                {
+                    product*= connections[i].coord1.x * connections[i].coord2.x;
+                    finished = true;
+                }
             }
             else if (circuits[j].contains(connections[i].coord2))
             {
@@ -113,12 +121,23 @@ int main()
                 {
                     circuits[first_match].insert(circuits[j].begin(), circuits[j].end());
                     circuits.erase(circuits.begin() + j);
+                    if (circuits[0].size() == coords.size())
+                    {
+                        finished = true;
+                    }
                     break;
                 }
                 circuits[j].insert(connections[i].coord1);
                 first_match = static_cast<int>(j);
+                if (circuits[0].size() == coords.size())
+                {
+                    product*= connections[i].coord1.x * connections[i].coord2.x;
+                    finished = true;
+                }
             }
         }
+        if (finished)
+            break;
         if (inserted)
             continue;
 
@@ -126,6 +145,7 @@ int main()
         circuits[circuits.size()-1].insert(connections[i].coord1);
         circuits[circuits.size()-1].insert(connections[i].coord2);
     }
+    
 
     std::sort(circuits.begin(), circuits.end(), 
         [](const std::set<Coordinate>& s1, const std::set<Coordinate>& s2)
@@ -133,14 +153,9 @@ int main()
         return s1.size() > s2.size();
     });
 
-    unsigned long long product{1};
 
-    for (std::size_t i{0}; i<3; ++i)
-    {
-        product *= circuits[i].size();
-    }
 
-    std::cout << product << '\n';
+    std::cout << static_cast<int>(product) << '\n';
     auto stop = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start_time);
     std::cout << "Time taken: " << duration.count() << " nanoseconds" << std::endl;
